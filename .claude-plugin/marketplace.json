@@ -1,0 +1,14 @@
+{
+  "name": "waiting-weather",
+  "description": "Rain or snow on screen while Claude Code waits on you",
+  "owner": {
+    "name": "Nhan Ngo"
+  },
+  "plugins": [
+    {
+      "name": "waiting-weather",
+      "source": "./",
+      "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows)"
+    }
+  ]
+}

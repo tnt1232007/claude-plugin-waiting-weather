@@ -1,0 +1,67 @@
+{
+  "name": "waiting-weather",
+  "displayName": "Waiting Weather",
+  "version": "1.0.0",
+  "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows)",
+  "author": {
+    "name": "Nhan Ngo"
+  },
+  "repository": "https://github.com/tnt1232007/claude-plugin-waiting-weather",
+  "license": "MIT",
+  "keywords": [
+    "rain",
+    "snow",
+    "notification",
+    "windows",
+    "permission",
+    "question"
+  ],
+  "userConfig": {
+    "delay_seconds": {
+      "type": "number",
+      "title": "Delay (seconds)",
+      "description": "How long Claude must wait on you before the alert goes out",
+      "default": 10,
+      "min": 0
+    },
+    "question_effect": {
+      "type": "string",
+      "title": "Question effect",
+      "description": "Screen effect for a question, plan approval or input dialog",
+      "options": [
+        "snow",
+        "rain"
+      ],
+      "default": "snow"
+    },
+    "question_color": {
+      "type": "string",
+      "title": "Question color",
+      "description": "Hex color of the question effect",
+      "default": "#FFFFFF"
+    },
+    "permission_effect": {
+      "type": "string",
+      "title": "Permission effect",
+      "description": "Screen effect for a permission prompt",
+      "options": [
+        "snow",
+        "rain"
+      ],
+      "default": "rain"
+    },
+    "permission_color": {
+      "type": "string",
+      "title": "Permission color",
+      "description": "Hex color of the permission effect",
+      "default": "#60A5FA"
+    },
+    "max_seconds": {
+      "type": "number",
+      "title": "Maximum effect length (seconds)",
+      "description": "The effect stops when you unblock Claude, or after this long at most",
+      "default": 120,
+      "min": 5
+    }
+  }
+}
