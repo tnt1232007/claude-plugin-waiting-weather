@@ -2,14 +2,17 @@
 # The look follows RainProject (github.com/riyasy/RainProject): thin streaks that splatter on the ground, and soft
 # flakes that settle into a heap. The code is a fresh GDI+ implementation, not a port of its source.
 # Each screen gets a click-through, never-focused, per-pixel-alpha overlay, so it cannot steal input while it shows.
-# The effect loops until Esc is pressed, -StopFile holds the word "stop", or -MaxSeconds pass, then fades out.
+# The effect loops until Space is pressed, -StopFile holds the word "stop", or -MaxSeconds pass, then fades out.
+# A corner hint says so, with a countdown to the remote alert when -NotifyAt (Unix ms) is set.
+# Exits 2 when Space dismissed it, which tells the hook someone is at the screen.
 param(
     [ValidateSet('snow', 'rain')]
     [string]$Effect = 'snow',
     [string]$Color = '#FFFFFF',
     [string]$Project = '',
     [int]$MaxSeconds = 120,
-    [string]$StopFile = ''
+    [string]$StopFile = '',
+    [long]$NotifyAt = 0
 )
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -38,7 +41,6 @@ static class Native {
     [DllImport("user32.dll")] public static extern IntPtr GetDC(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
-    [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
     [DllImport("gdi32.dll")] public static extern IntPtr CreateCompatibleDC(IntPtr hdc);
     [DllImport("gdi32.dll")] public static extern bool DeleteDC(IntPtr hdc);
     [DllImport("gdi32.dll")] public static extern IntPtr SelectObject(IntPtr hdc, IntPtr obj);
@@ -336,15 +338,84 @@ public static class Alert {
         }
     }
 
-    // Esc held now (0x8000), or pressed since the last check (0x0001), whichever window has focus.
-    static bool IsEscPressed() { return (Native.GetAsyncKeyState(0x1B) & 0x8001) != 0; }
+    delegate IntPtr KeyProc(int code, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")] static extern IntPtr SetWindowsHookEx(int id, KeyProc proc, IntPtr module, uint thread);
+    [DllImport("user32.dll")] static extern bool UnhookWindowsHookEx(IntPtr hook);
+    [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern IntPtr GetModuleHandle(string name);
+
+    // True once Space ended the effect, rather than the stop file or the cap.
+    public static bool IsDismissed;
+
+    // Kept in a field so the collector never frees the delegate the hook calls into.
+    static KeyProc keyProc;
+    static IntPtr keyHook;
+    static bool isSpaceHeld;
+
+    // A low-level keyboard hook, whichever window has focus. Space dismisses, and is swallowed with its repeats and
+    // key-up, so it never reaches the focused window and cannot pick or submit anything in Claude's dialog.
+    static IntPtr OnKey(int code, IntPtr wParam, IntPtr lParam) {
+        // lParam points at a KBDLLHOOKSTRUCT, whose first field is the virtual-key code; 0x20 is Space.
+        if (code >= 0 && Marshal.ReadInt32(lParam) == 0x20) {
+            int message = wParam.ToInt32();
+            // WM_KEYDOWN, WM_SYSKEYDOWN
+            if (message == 0x100 || message == 0x104) { IsDismissed = true; isSpaceHeld = true; return (IntPtr)1; }
+            // WM_KEYUP, WM_SYSKEYUP
+            if ((message == 0x101 || message == 0x105) && isSpaceHeld) { isSpaceHeld = false; return (IntPtr)1; }
+        }
+        return CallNextHookEx(keyHook, code, wParam, lParam);
+    }
+
+    // The corner hint: what Claude waits on, how to dismiss, and when the remote alert goes out.
+    static string[] HintLines(string project, long notifyAt) {
+        string title = project.Length > 0 ? "Claude is waiting on you \u00B7 " + project : "Claude is waiting on you";
+        if (notifyAt <= 0) return new[] { title, "Press Space to dismiss" };
+        long left = (notifyAt - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 999) / 1000;
+        string countdown = left > 0 ? "Sending notification in " + left + "s" : "Notification sent";
+        return new[] { title, "Press Space to dismiss", countdown };
+    }
+
+    // Top-right corner, clear of the snow heap and the taskbar.
+    static void DrawHint(Graphics g, float width, float scale, string[] lines) {
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+        float margin = 24 * scale, padding = 14 * scale, gap = 4 * scale;
+        using (Font bold = new Font("Segoe UI", 18 * scale, FontStyle.Bold, GraphicsUnit.Pixel))
+        using (Font regular = new Font("Segoe UI", 16 * scale, GraphicsUnit.Pixel))
+        using (SolidBrush panel = new SolidBrush(Color.FromArgb(190, 24, 24, 28)))
+        using (SolidBrush ink = new SolidBrush(Color.White))
+        using (SolidBrush dim = new SolidBrush(Color.FromArgb(200, 255, 255, 255))) {
+            SizeF[] sizes = new SizeF[lines.Length];
+            float boxWidth = 0, boxHeight = 0;
+            for (int i = 0; i < lines.Length; i++) {
+                sizes[i] = g.MeasureString(lines[i], i == 0 ? bold : regular);
+                boxWidth = Math.Max(boxWidth, sizes[i].Width);
+                boxHeight += sizes[i].Height + (i > 0 ? gap : 0);
+            }
+            RectangleF box = new RectangleF(width - margin - boxWidth - 2 * padding, margin, boxWidth + 2 * padding, boxHeight + 2 * padding);
+            float radius = 10 * scale;
+            using (GraphicsPath path = new GraphicsPath()) {
+                path.AddArc(box.Left, box.Top, 2 * radius, 2 * radius, 180, 90);
+                path.AddArc(box.Right - 2 * radius, box.Top, 2 * radius, 2 * radius, 270, 90);
+                path.AddArc(box.Right - 2 * radius, box.Bottom - 2 * radius, 2 * radius, 2 * radius, 0, 90);
+                path.AddArc(box.Left, box.Bottom - 2 * radius, 2 * radius, 2 * radius, 90, 90);
+                path.CloseFigure();
+                g.FillPath(panel, path);
+            }
+            float y = box.Top + padding;
+            for (int i = 0; i < lines.Length; i++) {
+                g.DrawString(lines[i], i == 0 ? bold : regular, i == 0 ? ink : dim, box.Left + padding, y);
+                y += sizes[i].Height + gap;
+            }
+        }
+    }
 
     static bool IsStopRequested(string stopFile) {
         if (stopFile.Length == 0) return false;
         try { return System.IO.File.ReadAllText(stopFile).Trim() == "stop"; } catch { return false; }
     }
 
-    public static void Play(string effect, Color color, int maxSeconds, string stopFile) {
+    public static void Play(string effect, Color color, int maxSeconds, string stopFile, string project, long notifyAt) {
         Native.SetProcessDPIAware();
         List<Overlay> overlays = new List<Overlay>();
         List<Scene> scenes = new List<Scene>();
@@ -361,13 +432,15 @@ public static class Alert {
             overlays.Add(overlay);
         }
 
-        // Fade in over 0.3 s; fade out over 0.6 s once Esc, the stop file or the cap ends it.
+        // Fade in over 0.3 s; fade out over 0.6 s once Space, the stop file or the cap ends it.
         const float fadeIn = 0.3f, fadeOut = 0.6f;
         Stopwatch clock = Stopwatch.StartNew();
         float last = 0;
         float stoppedAt = -1;
         int frame = 0;
-        Native.GetAsyncKeyState(0x1B); // drops an Esc pressed before the effect started
+        // WH_KEYBOARD_LL; its callbacks arrive on this thread's message loop.
+        keyProc = OnKey;
+        keyHook = SetWindowsHookEx(13, keyProc, GetModuleHandle(null), 0);
 
         Timer timer = new Timer { Interval = 15 };
         timer.Tick += (sender, args) => {
@@ -376,19 +449,22 @@ public static class Alert {
             float step = Math.Min(0.05f, now - last);
             last = now;
 
-            if (stoppedAt < 0 && (now >= maxSeconds || IsEscPressed() || (frame % 20 == 0 && IsStopRequested(stopFile)))) stoppedAt = now;
+            if (stoppedAt < 0 && (IsDismissed || now >= maxSeconds || (frame % 20 == 0 && IsStopRequested(stopFile)))) stoppedAt = now;
             float level = stoppedAt >= 0 ? 1 - (now - stoppedAt) / fadeOut : Math.Min(1, now / fadeIn);
             if (level <= 0) {
                 timer.Stop();
+                if (keyHook != IntPtr.Zero) UnhookWindowsHookEx(keyHook);
                 foreach (Overlay overlay in overlays) overlay.Close();
                 Application.ExitThread();
                 return;
             }
 
+            string[] hint = HintLines(project, notifyAt);
             for (int i = 0; i < overlays.Count; i++) {
                 scenes[i].Update(step);
                 overlays[i].G.Clear(Color.Transparent);
                 scenes[i].Draw(overlays[i].G);
+                DrawHint(overlays[i].G, overlays[i].Width, overlays[i].Height / 1080f, hint);
                 overlays[i].Present((byte)(255 * level));
             }
         };
@@ -399,4 +475,5 @@ public static class Alert {
 '@
 
 [Alert]::Flash($Project)
-[Alert]::Play($Effect, [System.Drawing.ColorTranslator]::FromHtml($Color), $MaxSeconds, $StopFile)
+[Alert]::Play($Effect, [System.Drawing.ColorTranslator]::FromHtml($Color), $MaxSeconds, $StopFile, $Project, $NotifyAt)
+if ([Alert]::IsDismissed) { exit 2 }

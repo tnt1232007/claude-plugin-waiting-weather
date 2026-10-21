@@ -1,8 +1,8 @@
 {
   "name": "waiting-weather",
   "displayName": "Waiting Weather",
-  "version": "1.0.0",
-  "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows)",
+  "version": "1.1.0",
+  "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows), and an optional Apprise push when you are away",
   "author": {
     "name": "Nhan Ngo"
   },
@@ -62,6 +62,25 @@
       "description": "The effect stops when you unblock Claude, or after this long at most",
       "default": 120,
       "min": 5
+    },
+    "remote_url": {
+      "type": "string",
+      "title": "Remote alert URL",
+      "description": "Apprise API notify endpoint (https://host/notify/<key>) that gets the question, its options or the command when Claude waits too long. Empty turns remote alerts off",
+      "default": ""
+    },
+    "remote_tag": {
+      "type": "string",
+      "title": "Remote alert tag",
+      "description": "Apprise tag that picks which services the remote alert goes to. Empty sends to every service of the key",
+      "default": ""
+    },
+    "remote_delay_seconds": {
+      "type": "number",
+      "title": "Remote alert delay (seconds)",
+      "description": "How long Claude must wait on you before the remote alert goes out",
+      "default": 60,
+      "min": 0
     }
   }
 }

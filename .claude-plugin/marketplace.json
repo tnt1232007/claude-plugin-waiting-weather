@@ -8,7 +8,7 @@
     {
       "name": "waiting-weather",
       "source": "./",
-      "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows)"
+      "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows), and an optional Apprise push when you are away"
     }
   ]
 }
