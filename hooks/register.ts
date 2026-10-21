@@ -93,6 +93,12 @@ const remoteRequest = (remote: Remote, title: string, body: string) => {
 }
 
 const alert = async ($: Host, alerts: Alerts, remote: Remote, due: Block[]) => {
+  const isPermission = due.some(one => one.isPermission)
+  const effect = isPermission ? alerts.permissionEffect : alerts.questionEffect
+  // `off`: nothing on screen, no taskbar flash and no Space hook, so only the remote alert goes out.
+  if (effect === 'off') return
+  const color = isPermission ? alerts.permissionColor : alerts.questionColor
+
   const root = await $.session.root()
   const project = root.split(/[\\/]/).filter(Boolean).pop() ?? root
   // One state file per session, so two sessions never stop each other's effect.
@@ -101,9 +107,6 @@ const alert = async ($: Host, alerts: Alerts, remote: Remote, due: Block[]) => {
   playing = stopFile
 
   // Windows only: a screen effect on every screen, and the project's VS Code taskbar button flashing until focused.
-  const isPermission = due.some(one => one.isPermission)
-  const effect = isPermission ? alerts.permissionEffect : alerts.questionEffect
-  const color = isPermission ? alerts.permissionColor : alerts.questionColor
   const script = `${$.plugin.root}/scripts/alert.ps1`
   // When the remote push goes out, as Unix ms, for the effect's countdown; 0 hides it.
   const notifyAt = remote.url ? Math.min(...due.map(one => one.startedAt)) + remote.delayMs : 0

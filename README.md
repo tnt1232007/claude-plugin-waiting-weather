@@ -40,9 +40,9 @@ Open `/config` to change these options:
 | Option | Default | What it does |
 | --- | --- | --- |
 | `delay_seconds` | `10` | How long Claude must wait on you before the weather starts |
-| `question_effect` | `snow` | `snow` or `rain` for a question, plan approval or input dialog |
+| `question_effect` | `snow` | `snow`, `rain` or `off` for a question, plan approval or input dialog |
 | `question_color` | `#FFFFFF` | Hex color of the question effect |
-| `permission_effect` | `rain` | `snow` or `rain` for a permission prompt |
+| `permission_effect` | `rain` | `snow`, `rain` or `off` for a permission prompt |
 | `permission_color` | `#60A5FA` | Hex color of the permission effect |
 | `max_seconds` | `120` | The longest the weather runs. Keep it above `remote_delay_seconds` to see the countdown reach the remote alert |
 | `remote_url` | empty | Where remote alerts go: an Apprise API endpoint, a Telegram sendMessage URL or a Google Chat webhook. Empty turns them off |

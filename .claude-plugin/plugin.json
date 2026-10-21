@@ -1,7 +1,7 @@
 {
   "name": "waiting-weather",
   "displayName": "Waiting Weather",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows), and an optional Apprise push when you are away",
   "author": {
     "name": "Nhan Ngo"
@@ -27,10 +27,11 @@
     "question_effect": {
       "type": "string",
       "title": "Question effect (default: snow)",
-      "description": "Screen effect for a question, plan approval or input dialog",
+      "description": "Screen effect for a question, plan approval or input dialog. off shows nothing, for a machine where an overlay or a swallowed Space key would get in the way",
       "options": [
         "snow",
-        "rain"
+        "rain",
+        "off"
       ],
       "default": "snow"
     },
@@ -43,10 +44,11 @@
     "permission_effect": {
       "type": "string",
       "title": "Permission effect (default: rain)",
-      "description": "Screen effect for a permission prompt",
+      "description": "Screen effect for a permission prompt. off shows nothing, for a machine where an overlay or a swallowed Space key would get in the way",
       "options": [
         "snow",
-        "rain"
+        "rain",
+        "off"
       ],
       "default": "rain"
     },
