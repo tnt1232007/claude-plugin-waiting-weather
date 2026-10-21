@@ -45,13 +45,21 @@ Open `/config` to change these options:
 | `permission_effect` | `rain` | `snow` or `rain` for a permission prompt |
 | `permission_color` | `#60A5FA` | Hex color of the permission effect |
 | `max_seconds` | `120` | The longest the weather runs. Keep it above `remote_delay_seconds` to see the countdown reach the remote alert |
-| `remote_url` | empty | Apprise API notify endpoint for remote alerts. Empty turns them off |
-| `remote_tag` | empty | Apprise tag the remote alert is sent with |
+| `remote_url` | empty | Where remote alerts go: an Apprise API endpoint, a Telegram sendMessage URL or a Google Chat webhook. Empty turns them off |
+| `remote_tag` | empty | Apprise tag the remote alert is sent with. Ignored for Telegram and Google Chat |
 | `remote_delay_seconds` | `60` | How long Claude must wait on you before the remote alert goes out |
 
 ## Remote alerts
 
-The weather only helps when you are at the screen. To get alerts while you are away, point `remote_url` at an [Apprise API](https://github.com/caronc/apprise-api) `/notify/<key>` endpoint. Apprise then forwards the alert to Telegram, ntfy, Discord or any other service it supports.
+The weather only helps when you are at the screen. To get alerts while you are away, set `remote_url` to one of these:
+
+| Service | `remote_url` |
+| --- | --- |
+| Telegram | `https://api.telegram.org/bot<token>/sendMessage?chat_id=<chat id>`, using a bot from [@BotFather](https://t.me/BotFather) |
+| Google Chat | The incoming webhook URL of a space (Google Workspace accounts only) |
+| [Apprise API](https://github.com/caronc/apprise-api) | Its `/notify/<key>` endpoint, which forwards to Telegram, ntfy, Discord or any other service Apprise supports |
+
+Telegram gets the alert as plain text. The URL holds your bot token, so treat it as a secret.
 
 If Claude is still blocked after `remote_delay_seconds`, the plugin posts one alert with enough detail to decide your answer:
 

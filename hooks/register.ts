@@ -68,9 +68,28 @@ const detailQuestion = (tool: string, input: unknown) => {
 const push = async ($: Host, remote: Remote, due: Block[]) => {
   const root = await $.session.root()
   const project = root.split(/[\\/]/).filter(Boolean).pop() ?? root
+  const title = `Claude Code · ${project} is waiting on you`
   const body = due.map(one => [`**${one.label}**`, one.detail].filter(Boolean).join('\n')).join('\n\n')
-  const payload = { title: `Claude Code · ${project} is waiting on you`, body, type: 'warning', format: 'markdown', ...(remote.tag ? { tag: remote.tag } : {}) }
-  await $.http.fetch(remote.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {})
+  const { url, payload } = remoteRequest(remote, title, body)
+  await $.http.fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {})
+}
+
+// The request `remote_url` takes, picked by its host: Telegram's sendMessage (chat_id in the query), a Google Chat
+// webhook, or else an Apprise API `/notify` endpoint.
+const remoteRequest = (remote: Remote, title: string, body: string) => {
+  const url = new URL(remote.url)
+  if (url.hostname === 'api.telegram.org') {
+    const chatId = url.searchParams.get('chat_id')
+    url.searchParams.delete('chat_id')
+    // Plain text: Telegram's Markdown modes reject unescaped characters, which commands are full of.
+    const text = `${title}\n\n${body}`.replace(/\*\*/g, '').replace(/```\n?/g, '')
+    return { url: url.toString(), payload: { chat_id: chatId, text } }
+  }
+  if (url.hostname === 'chat.googleapis.com') {
+    // Google Chat marks bold with single asterisks.
+    return { url: remote.url, payload: { text: `*${title}*\n\n${body.replace(/\*\*/g, '*')}` } }
+  }
+  return { url: remote.url, payload: { title, body, type: 'warning', format: 'markdown', ...(remote.tag ? { tag: remote.tag } : {}) } }
 }
 
 const alert = async ($: Host, alerts: Alerts, remote: Remote, due: Block[]) => {

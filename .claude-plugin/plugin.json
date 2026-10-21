@@ -1,7 +1,7 @@
 {
   "name": "waiting-weather",
   "displayName": "Waiting Weather",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows), and an optional Apprise push when you are away",
   "author": {
     "name": "Nhan Ngo"
@@ -66,13 +66,13 @@
     "remote_url": {
       "type": "string",
       "title": "Remote alert URL",
-      "description": "Apprise API notify endpoint (https://host/notify/<key>) that gets the question, its options or the command when Claude waits too long. Empty turns remote alerts off",
+      "description": "Where the question, its options or the command goes when Claude waits too long: an Apprise API notify endpoint (https://host/notify/<key>), a Telegram sendMessage URL (https://api.telegram.org/bot<token>/sendMessage?chat_id=<id>) or a Google Chat webhook URL. Empty turns remote alerts off",
       "default": ""
     },
     "remote_tag": {
       "type": "string",
       "title": "Remote alert tag",
-      "description": "Apprise tag that picks which services the remote alert goes to. Empty sends to every service of the key",
+      "description": "Apprise tag that picks which services the remote alert goes to. Empty sends to every service of the key. Ignored for Telegram and Google Chat",
       "default": ""
     },
     "remote_delay_seconds": {
