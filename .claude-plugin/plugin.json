@@ -1,7 +1,7 @@
 {
   "name": "waiting-weather",
   "displayName": "Waiting Weather",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Rain or snow falls across your screen while Claude Code is blocked on you (Windows), and an optional Apprise push when you are away",
   "author": {
     "name": "Nhan Ngo"
@@ -19,14 +19,14 @@
   "userConfig": {
     "delay_seconds": {
       "type": "number",
-      "title": "Delay (seconds)",
+      "title": "Delay (seconds) (default: 10)",
       "description": "How long Claude must wait on you before the alert goes out",
       "default": 10,
       "min": 0
     },
     "question_effect": {
       "type": "string",
-      "title": "Question effect",
+      "title": "Question effect (default: snow)",
       "description": "Screen effect for a question, plan approval or input dialog",
       "options": [
         "snow",
@@ -36,13 +36,13 @@
     },
     "question_color": {
       "type": "string",
-      "title": "Question color",
+      "title": "Question color (default: #FFFFFF)",
       "description": "Hex color of the question effect",
       "default": "#FFFFFF"
     },
     "permission_effect": {
       "type": "string",
-      "title": "Permission effect",
+      "title": "Permission effect (default: rain)",
       "description": "Screen effect for a permission prompt",
       "options": [
         "snow",
@@ -52,32 +52,32 @@
     },
     "permission_color": {
       "type": "string",
-      "title": "Permission color",
+      "title": "Permission color (default: #60A5FA)",
       "description": "Hex color of the permission effect",
       "default": "#60A5FA"
     },
     "max_seconds": {
       "type": "number",
-      "title": "Maximum effect length (seconds)",
+      "title": "Maximum effect length (seconds) (default: 120)",
       "description": "The effect stops when you unblock Claude, or after this long at most",
       "default": 120,
       "min": 5
     },
     "remote_url": {
       "type": "string",
-      "title": "Remote alert URL",
+      "title": "Remote alert URL (default: empty, off)",
       "description": "Where the question, its options or the command goes when Claude waits too long: an Apprise API notify endpoint (https://host/notify/<key>), a Telegram sendMessage URL (https://api.telegram.org/bot<token>/sendMessage?chat_id=<id>) or a Google Chat webhook URL. Empty turns remote alerts off",
       "default": ""
     },
     "remote_tag": {
       "type": "string",
-      "title": "Remote alert tag",
+      "title": "Remote alert tag (default: empty)",
       "description": "Apprise tag that picks which services the remote alert goes to. Empty sends to every service of the key. Ignored for Telegram and Google Chat",
       "default": ""
     },
     "remote_delay_seconds": {
       "type": "number",
-      "title": "Remote alert delay (seconds)",
+      "title": "Remote alert delay (seconds) (default: 60)",
       "description": "How long Claude must wait on you before the remote alert goes out",
       "default": 60,
       "min": 0
